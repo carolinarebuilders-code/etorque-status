@@ -446,7 +446,7 @@ function doLookup() {
   const searchVal = isEmail ? val : val.replace(/\D/g, '');
 
   // Fetch all rows and match locally to avoid column name encoding issues
-  fetch(`${SHEETDB}?sheet=Form_Responses&limit=500`)
+  fetch(`${SHEETDB}?limit=500`)
     .then(function(r) {
       if (!r.ok) throw new Error('Network error');
       return r.json();

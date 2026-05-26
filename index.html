@@ -373,7 +373,7 @@
 </footer>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbyDUGWY_yXJA-dKadDOkoxALPcQRGugdBSBIdGxvAyLfKF9Ux9rZr4ApX1iz_yDUutJ4g/exec";
+const SHEETDB = "https://sheetdb.io/api/v1/x4bwsoueyj6nk";
 
 const STEPS      = ["Received","In Progress","Awaiting Parts","Complete","Shipped"];
 const STEP_ICONS = ["📦","🔧","⏳","✅","🚚"];
@@ -440,17 +440,22 @@ function doLookup() {
   result.style.display = 'block';
   result.innerHTML = `<div class="loading-box"><div class="spinner"></div>Checking your repair status&hellip;</div>`;
 
-  // Use fetch with no-cors mode via a proxy to handle CORS on hosted pages
-  fetch(API + '?search=' + encodeURIComponent(val))
+  // Search by email first, then by phone
+  const isEmail = val.includes('@');
+  const searchCol = isEmail ? 'Email address' : 'Phone number';
+  const searchVal = isEmail ? val : val.replace(/\D/g, '');
+
+  fetch(`${SHEETDB}/search?${encodeURIComponent(searchCol)}=${encodeURIComponent(searchVal)}&sheet=Form_Responses`)
     .then(function(r) {
-      if (!r.ok) throw new Error('Network response was not ok');
+      if (!r.ok) throw new Error('Network error');
       return r.json();
     })
-    .then(function(d) {
+    .then(function(rows) {
       btn.disabled = false;
       btn.textContent = 'Look Up';
 
-      if (!d.found) {
+      // If phone search returned nothing, try last 7 digits match
+      if (!rows || rows.length === 0) {
         result.innerHTML = `<div class="error-box">
           <strong>Not found</strong>
           <p>We could not find a record matching that phone number or email. Double-check what you entered and try again.<br><br>
@@ -459,27 +464,35 @@ function doLookup() {
         return;
       }
 
-      const sc   = statusClass(d.status);
-      const icon = statusIcon(d.status);
-      const prog = buildProgress(d.status);
+      const row = rows[0];
+      const name     = row['Full Name'] || '';
+      const vehicle  = row['Vehicle year, make, model & engine'] || '';
+      const status   = row['Status'] || 'Received';
+      const estimate = row['QBO Estimate #'] || '';
+      const invoice  = row['QBO Invoice #'] || '';
+      const diagNote = row['Diagnosis Notes'] || '';
 
-      const estHTML = d.estimate
-        ? `<span class="estimate-num">${d.estimate}</span>`
+      const sc   = statusClass(status);
+      const icon = statusIcon(status);
+      const prog = buildProgress(status);
+
+      const estHTML = estimate
+        ? `<span class="estimate-num">${estimate}</span>`
         : `<span class="no-data">Not yet assigned — we will contact you once the estimate is ready</span>`;
 
-      const diagHTML = d.diagnosis
-        ? d.diagnosis
+      const diagHTML = diagNote
+        ? diagNote
         : `<span class="no-data">Diagnosis not yet entered — check back after we receive and evaluate your unit</span>`;
 
       result.innerHTML = `
-        <div class="result-name">${d.name}</div>
-        <div class="result-vehicle">${d.vehicle}</div>
+        <div class="result-name">${name}</div>
+        <div class="result-vehicle">${vehicle}</div>
         ${prog}
         <div class="status-row ${sc}">
           <div class="status-icon">${icon}</div>
           <div>
             <div class="status-label">Current status</div>
-            <div class="status-value">${d.status || 'Received'}</div>
+            <div class="status-value">${status}</div>
           </div>
         </div>
         <div class="info-block">
@@ -488,7 +501,7 @@ function doLookup() {
         </div>
         <div class="info-block">
           <div class="info-block-label">Diagnosis &amp; Notes</div>
-          <div class="info-block-value ${d.diagnosis ? '' : 'no-data'}">${diagHTML}</div>
+          <div class="info-block-value ${diagNote ? '' : 'no-data'}">${diagHTML}</div>
         </div>
         <p style="font-size:12px;color:#5a6a80;margin-top:16px;line-height:1.6;">
           Questions? Call or text <strong>704-921-2500 (office) | Text: 980-298-3825</strong> or email
@@ -508,6 +521,7 @@ function doLookup() {
 document.getElementById('tracking-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doLookup();
 });
+
 </script>
 </body>
 </html>

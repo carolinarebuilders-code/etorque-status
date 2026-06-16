@@ -488,7 +488,9 @@ function doLookup() {
       const status   = row['Status'] || 'Waiting Arrival';
       const estimate = row['QBO Estimate #'] || '';
       const invoice  = row['QBO Invoice #'] || '';
-      const diagNote = row['Diagnosis Notes'] || '';
+      const diagNote    = row['Diagnosis Notes'] || '';
+      const trackingOut = row['Tracking # Out'] || '';
+      const shipDate    = row['Ship Date'] || '';
 
       const sc   = statusClass(status);
       const icon = statusIcon(status);
@@ -501,6 +503,10 @@ function doLookup() {
       const diagHTML = diagNote
         ? diagNote
         : `<span class="no-data">Diagnosis not yet entered — check back after we receive and evaluate your unit</span>`;
+
+      const trackingHTML = trackingOut
+        ? `<a href="https://www.ups.com/track?tracknum=${trackingOut}" target="_blank" style="color:#1e7ec8;font-weight:600;font-size:15px;">${trackingOut}</a>${shipDate ? ' &nbsp;|&nbsp; Shipped: ' + shipDate : ''}`
+        : `<span class="no-data">Not yet shipped — check back once your unit is complete</span>`;
 
       result.innerHTML = `
         <div class="result-name">${name}</div>
@@ -520,6 +526,14 @@ function doLookup() {
         <div class="info-block">
           <div class="info-block-label">Diagnosis &amp; Notes</div>
           <div class="info-block-value ${diagNote ? '' : 'no-data'}">${diagHTML}</div>
+        </div>
+        <div class="info-block">
+          <div class="info-block-label">Invoice #</div>
+          <div class="info-block-value ${invoice ? '' : 'no-data'}">${invoice ? '<span style=\"color:#1e7ec8;font-weight:700;font-size:20px;\">' + invoice + '</span>' : '<span class=\"no-data\">Not yet invoiced — payment will be requested once repair is complete</span>'}</div>
+        </div>
+        <div class="info-block">
+          <div class="info-block-label">Return Tracking # &amp; Ship Date</div>
+          <div class="info-block-value ${trackingOut ? '' : 'no-data'}">${trackingHTML}</div>
         </div>
         <p style="font-size:12px;color:#5a6a80;margin-top:16px;line-height:1.6;">
           Questions? Call or text <strong>704-921-2500 (office) | Text: 980-298-3825</strong> or email
